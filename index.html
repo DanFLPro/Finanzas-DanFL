@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>💰 Finanzas MasterDan</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    color: orange;
+}
+
+input, select, button {
+    margin: 5px;
+    padding: 10px;
+    font-size: 16px;
+}
+
+button {
+    background: orange;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #ff9800;
+}
+
+ul {
+    padding: 0;
+}
+
+li {
+    list-style: none;
+    margin: 8px;
+    padding: 10px;
+    background: #222;
+    border-radius: 8px;
+}
+
+.eliminar {
+    background: red;
+    margin-left: 10px;
+}
+</style>
+
+</head>
+<body>
+
+<h1>💰 Finanzas MasterDan</h1>
+
+<select id="tipo">
+  <option value="ingreso">Ingreso</option>
+  <option value="gasto">Gasto</option>
+</select>
+
+<input type="text" id="descripcion" placeholder="Descripción">
+<input type="number" id="monto" placeholder="Monto">
+
+<button onclick="agregar()">Agregar</button>
+
+<h3>Ingresos: S/ <span id="ingresos">0</span></h3>
+<h3>Gastos: S/ <span id="gastos">0</span></h3>
+<h2>Balance: S/ <span id="balance">0</span></h2>
+
+<ul id="lista"></ul>
+
+<script>
+let movimientos = JSON.parse(localStorage.getItem("movimientos")) || [];
+
+function agregar() {
+    let tipo = document.getElementById("tipo").value;
+    let descripcion = document.getElementById("descripcion").value;
+    let monto = parseFloat(document.getElementById("monto").value);
+
+    if (!descripcion || isNaN(monto)) {
+        alert("Completa los datos correctamente");
+        return;
+    }
+
+    let movimiento = {
+        tipo: tipo,
+        descripcion: descripcion,
+        monto: monto
+    };
+
+    movimientos.push(movimiento);
+    localStorage.setItem("movimientos", JSON.stringify(movimientos));
+
+    limpiar();
+    mostrar();
+}
+
+function mostrar() {
+    let lista = document.getElementById("lista");
+    lista.innerHTML = "";
+
+    let ingresos = 0;
+    let gastos = 0;
+
+    movimientos.forEach((m, index) => {
+        let li = document.createElement("li");
+
+        li.innerHTML = `
+            ${m.tipo.toUpperCase()} - ${m.descripcion} - S/ ${m.monto}
+            <button class="eliminar" onclick="eliminar(${index})">X</button>
+        `;
+
+        lista.appendChild(li);
+
+        if (m.tipo === "ingreso") {
+            ingresos += m.monto;
+        } else {
+            gastos += m.monto;
+        }
+    });
+
+    document.getElementById("ingresos").textContent = ingresos;
+    document.getElementById("gastos").textContent = gastos;
+    document.getElementById("balance").textContent = ingresos - gastos;
+}
+
+function eliminar(index) {
+    movimientos.splice(index, 1);
+    localStorage.setItem("movimientos", JSON.stringify(movimientos));
+    mostrar();
+}
+
+function limpiar() {
+    document.getElementById("descripcion").value = "";
+    document.getElementById("monto").value = "";
+}
+
+mostrar();
+</script>
+
+</body>
+</html>
