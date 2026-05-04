@@ -13,13 +13,24 @@ body {
     background: #111;
     color: white;
     text-align: center;
+    margin: 0;
+    padding: 15px;
+}
+
+h1 {
+    color: orange;
+}
+
+input, select, button {
+    margin: 5px;
+    padding: 10px;
+    font-size: 16px;
 }
 
 button {
-    padding: 10px;
-    margin: 5px;
     background: orange;
     border: none;
+    cursor: pointer;
 }
 
 .reset { background: red; }
@@ -30,15 +41,52 @@ button {
 .contenedor {
     display: flex;
     flex-wrap: wrap;
+    justify-content: space-around;
 }
 
 .lista-box {
     width: 45%;
 }
 
+ul {
+    padding: 0;
+}
+
+li {
+    list-style: none;
+    margin: 8px;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+/* 🔥 CONTENEDOR DEL GRÁFICO */
+.grafico-container {
+    width: 100%;
+    max-width: 400px;
+    height: 300px;
+    margin: 20px auto;
+    background: #1c1c1c;
+    padding: 15px;
+    border-radius: 12px;
+}
+
+/* 📱 RESPONSIVE */
 @media(max-width:768px){
-    .contenedor{ flex-direction: column; }
-    .lista-box{ width:100%; }
+    .contenedor{ 
+        flex-direction: column; 
+        align-items: center;
+    }
+    .lista-box{ 
+        width:100%; 
+    }
+    input, select, button{
+        width: 90%;
+    }
+}
+
+canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 </style>
 </head>
@@ -55,6 +103,8 @@ button {
 <input id="descripcion" placeholder="Descripción">
 <input id="monto" type="number" placeholder="Monto">
 
+<br>
+
 <button onclick="agregar()">Agregar</button>
 <button class="reset" onclick="reiniciar()">Reiniciar</button>
 
@@ -67,16 +117,18 @@ button {
 <button onclick="setFiltro('semana')">Semana</button>
 <button onclick="setFiltro('mes')">Mes</button>
 
-<canvas id="grafico" width="300"></canvas>
+<div class="grafico-container">
+    <canvas id="grafico"></canvas>
+</div>
 
 <div class="contenedor">
 <div class="lista-box">
-<h3>Ingresos</h3>
+<h3>🟢 Ingresos</h3>
 <ul id="listaIngresos"></ul>
 </div>
 
 <div class="lista-box">
-<h3>Gastos</h3>
+<h3>🔴 Gastos</h3>
 <ul id="listaGastos"></ul>
 </div>
 </div>
@@ -87,9 +139,9 @@ let filtro = "todos";
 let chart;
 
 function agregar(){
-    let tipo = tipoEl.value;
-    let descripcion = descripcionEl.value;
-    let monto = parseFloat(montoEl.value);
+    let tipo = tipo.value;
+    let descripcion = descripcion.value;
+    let monto = parseFloat(monto.value);
 
     if(!descripcion || isNaN(monto)) return alert("Completa datos");
 
@@ -98,6 +150,7 @@ function agregar(){
     movimientos.push({tipo,descripcion,monto,fecha});
     localStorage.setItem("movimientos", JSON.stringify(movimientos));
 
+    limpiar();
     mostrar();
 }
 
@@ -122,11 +175,8 @@ function filtrar(){
 }
 
 function mostrar(){
-    let listaI = listaIngresos;
-    let listaG = listaGastos;
-
-    listaI.innerHTML="";
-    listaG.innerHTML="";
+    listaIngresos.innerHTML="";
+    listaGastos.innerHTML="";
 
     let ingresos=0, gastos=0;
 
@@ -136,18 +186,20 @@ function mostrar(){
         let li=document.createElement("li");
 
         li.innerHTML = `
-        ${m.descripcion} - S/ ${m.monto}
-        <br><small>${new Date(m.fecha).toLocaleString()}</small>
+        <strong>${m.descripcion}</strong><br>
+        S/ ${m.monto}<br>
+        <small>${new Date(m.fecha).toLocaleString()}</small>
+        <br>
         <button onclick="eliminar(${i})">X</button>
         `;
 
         if(m.tipo==="ingreso"){
             li.className="ingreso";
-            listaI.appendChild(li);
+            listaIngresos.appendChild(li);
             ingresos+=m.monto;
         }else{
             li.className="gasto";
-            listaG.appendChild(li);
+            listaGastos.appendChild(li);
             gastos+=m.monto;
         }
     });
@@ -162,13 +214,25 @@ function mostrar(){
 function actualizarGrafico(ingresos,gastos){
     if(chart) chart.destroy();
 
-    chart = new Chart(grafico, {
+    chart = new Chart(document.getElementById("grafico"), {
         type: 'doughnut',
         data: {
             labels: ['Ingresos','Gastos'],
             datasets: [{
-                data: [ingresos, gastos]
+                data: [ingresos, gastos],
+                backgroundColor: ['#4caf50','#f44336']
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'white'
+                    }
+                }
+            }
         }
     });
 }
@@ -180,9 +244,11 @@ function eliminar(i){
 }
 
 function reiniciar(){
-    movimientos=[];
-    localStorage.removeItem("movimientos");
-    mostrar();
+    if(confirm("¿Borrar todo?")){
+        movimientos=[];
+        localStorage.removeItem("movimientos");
+        mostrar();
+    }
 }
 
 function setFiltro(f){
@@ -190,7 +256,11 @@ function setFiltro(f){
     mostrar();
 }
 
-let tipoEl=tipo, descripcionEl=descripcion, montoEl=monto;
+function limpiar(){
+    descripcion.value="";
+    monto.value="";
+}
+
 let ingresosEl=ingresos, gastosEl=gastos, balanceEl=balance;
 
 mostrar();
