@@ -5,69 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>💰 Finanzas DanFL</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 body {
     font-family: Arial;
     background: #111;
     color: white;
     text-align: center;
-    margin: 0;
-    padding: 20px;
-}
-
-h1 {
-    color: orange;
-}
-
-input, select, button {
-    margin: 5px;
-    padding: 10px;
-    font-size: 16px;
 }
 
 button {
+    padding: 10px;
+    margin: 5px;
     background: orange;
     border: none;
-    cursor: pointer;
 }
 
-button:hover {
-    background: #ff9800;
-}
+.reset { background: red; }
 
-.reset {
-    background: red;
-}
-
-ul {
-    padding: 0;
-}
-
-li {
-    list-style: none;
-    margin: 8px;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 15px;
-}
-
-.ingreso {
-    background: #1b5e20;
-}
-
-.gasto {
-    background: #7f0000;
-}
-
-.eliminar {
-    background: black;
-    margin-left: 10px;
-    color: white;
-}
+.ingreso { background: #1b5e20; }
+.gasto { background: #7f0000; }
 
 .contenedor {
     display: flex;
-    justify-content: space-around;
     flex-wrap: wrap;
 }
 
@@ -75,50 +36,24 @@ li {
     width: 45%;
 }
 
-/* 📱 RESPONSIVE PARA CELULAR */
-@media (max-width: 768px) {
-
-    body {
-        padding: 10px;
-    }
-
-    h1 {
-        font-size: 22px;
-    }
-
-    input, select, button {
-        width: 90%;
-        font-size: 18px;
-    }
-
-    .contenedor {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .lista-box {
-        width: 100%;
-        margin-bottom: 20px;
-    }
-
-    li {
-        font-size: 14px;
-    }
+@media(max-width:768px){
+    .contenedor{ flex-direction: column; }
+    .lista-box{ width:100%; }
 }
 </style>
-
 </head>
+
 <body>
 
 <h1>💰 Finanzas DanFL</h1>
 
 <select id="tipo">
-  <option value="ingreso">Ingreso</option>
-  <option value="gasto">Gasto</option>
+<option value="ingreso">Ingreso</option>
+<option value="gasto">Gasto</option>
 </select>
 
-<input type="text" id="descripcion" placeholder="Descripción">
-<input type="number" id="monto" placeholder="Monto">
+<input id="descripcion" placeholder="Descripción">
+<input id="monto" type="number" placeholder="Monto">
 
 <button onclick="agregar()">Agregar</button>
 <button class="reset" onclick="reiniciar()">Reiniciar</button>
@@ -127,102 +62,136 @@ li {
 <h3>Gastos: S/ <span id="gastos">0</span></h3>
 <h2>Balance: S/ <span id="balance">0</span></h2>
 
-<div class="contenedor">
-    <div class="lista-box">
-        <h3>🟢 Ingresos</h3>
-        <ul id="listaIngresos"></ul>
-    </div>
+<h3>Filtro:</h3>
+<button onclick="setFiltro('todos')">Todos</button>
+<button onclick="setFiltro('semana')">Semana</button>
+<button onclick="setFiltro('mes')">Mes</button>
 
-    <div class="lista-box">
-        <h3>🔴 Gastos</h3>
-        <ul id="listaGastos"></ul>
-    </div>
+<canvas id="grafico" width="300"></canvas>
+
+<div class="contenedor">
+<div class="lista-box">
+<h3>Ingresos</h3>
+<ul id="listaIngresos"></ul>
+</div>
+
+<div class="lista-box">
+<h3>Gastos</h3>
+<ul id="listaGastos"></ul>
+</div>
 </div>
 
 <script>
 let movimientos = JSON.parse(localStorage.getItem("movimientos")) || [];
+let filtro = "todos";
+let chart;
 
-function agregar() {
-    let tipo = document.getElementById("tipo").value;
-    let descripcion = document.getElementById("descripcion").value;
-    let monto = parseFloat(document.getElementById("monto").value);
+function agregar(){
+    let tipo = tipoEl.value;
+    let descripcion = descripcionEl.value;
+    let monto = parseFloat(montoEl.value);
 
-    if (!descripcion || isNaN(monto)) {
-        alert("Completa los datos correctamente");
-        return;
-    }
+    if(!descripcion || isNaN(monto)) return alert("Completa datos");
 
-    let fecha = new Date().toLocaleString();
+    let fecha = new Date().toISOString();
 
-    let movimiento = {
-        tipo,
-        descripcion,
-        monto,
-        fecha
-    };
-
-    movimientos.push(movimiento);
+    movimientos.push({tipo,descripcion,monto,fecha});
     localStorage.setItem("movimientos", JSON.stringify(movimientos));
 
-    limpiar();
     mostrar();
 }
 
-function mostrar() {
-    let listaIngresos = document.getElementById("listaIngresos");
-    let listaGastos = document.getElementById("listaGastos");
+function filtrar(){
+    let ahora = new Date();
 
-    listaIngresos.innerHTML = "";
-    listaGastos.innerHTML = "";
+    return movimientos.filter(m=>{
+        let f = new Date(m.fecha);
 
-    let ingresos = 0;
-    let gastos = 0;
+        if(filtro==="semana"){
+            let diff = (ahora - f)/(1000*60*60*24);
+            return diff <= 7;
+        }
 
-    movimientos.forEach((m, index) => {
-        let li = document.createElement("li");
+        if(filtro==="mes"){
+            return f.getMonth()===ahora.getMonth() &&
+                   f.getFullYear()===ahora.getFullYear();
+        }
+
+        return true;
+    });
+}
+
+function mostrar(){
+    let listaI = listaIngresos;
+    let listaG = listaGastos;
+
+    listaI.innerHTML="";
+    listaG.innerHTML="";
+
+    let ingresos=0, gastos=0;
+
+    let datos = filtrar();
+
+    datos.forEach((m,i)=>{
+        let li=document.createElement("li");
 
         li.innerHTML = `
-            <strong>${m.descripcion}</strong><br>
-            S/ ${m.monto} <br>
-            <small>${m.fecha}</small>
-            <br>
-            <button class="eliminar" onclick="eliminar(${index})">X</button>
+        ${m.descripcion} - S/ ${m.monto}
+        <br><small>${new Date(m.fecha).toLocaleString()}</small>
+        <button onclick="eliminar(${i})">X</button>
         `;
 
-        if (m.tipo === "ingreso") {
-            li.classList.add("ingreso");
-            listaIngresos.appendChild(li);
-            ingresos += m.monto;
-        } else {
-            li.classList.add("gasto");
-            listaGastos.appendChild(li);
-            gastos += m.monto;
+        if(m.tipo==="ingreso"){
+            li.className="ingreso";
+            listaI.appendChild(li);
+            ingresos+=m.monto;
+        }else{
+            li.className="gasto";
+            listaG.appendChild(li);
+            gastos+=m.monto;
         }
     });
 
-    document.getElementById("ingresos").textContent = ingresos;
-    document.getElementById("gastos").textContent = gastos;
-    document.getElementById("balance").textContent = ingresos - gastos;
+    ingresosEl.textContent=ingresos;
+    gastosEl.textContent=gastos;
+    balanceEl.textContent=ingresos-gastos;
+
+    actualizarGrafico(ingresos,gastos);
 }
 
-function eliminar(index) {
-    movimientos.splice(index, 1);
+function actualizarGrafico(ingresos,gastos){
+    if(chart) chart.destroy();
+
+    chart = new Chart(grafico, {
+        type: 'doughnut',
+        data: {
+            labels: ['Ingresos','Gastos'],
+            datasets: [{
+                data: [ingresos, gastos]
+            }]
+        }
+    });
+}
+
+function eliminar(i){
+    movimientos.splice(i,1);
     localStorage.setItem("movimientos", JSON.stringify(movimientos));
     mostrar();
 }
 
-function reiniciar() {
-    if (confirm("¿Seguro que quieres borrar todos los datos?")) {
-        movimientos = [];
-        localStorage.removeItem("movimientos");
-        mostrar();
-    }
+function reiniciar(){
+    movimientos=[];
+    localStorage.removeItem("movimientos");
+    mostrar();
 }
 
-function limpiar() {
-    document.getElementById("descripcion").value = "";
-    document.getElementById("monto").value = "";
+function setFiltro(f){
+    filtro=f;
+    mostrar();
 }
+
+let tipoEl=tipo, descripcionEl=descripcion, montoEl=monto;
+let ingresosEl=ingresos, gastosEl=gastos, balanceEl=balance;
 
 mostrar();
 </script>
