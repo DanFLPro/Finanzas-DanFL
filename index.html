@@ -34,6 +34,10 @@ button:hover {
     background: #ff9800;
 }
 
+.reset {
+    background: red;
+}
+
 ul {
     padding: 0;
 }
@@ -42,13 +46,31 @@ li {
     list-style: none;
     margin: 8px;
     padding: 10px;
-    background: #222;
     border-radius: 8px;
 }
 
+.ingreso {
+    background: #1b5e20;
+}
+
+.gasto {
+    background: #7f0000;
+}
+
 .eliminar {
-    background: red;
+    background: black;
     margin-left: 10px;
+    color: white;
+}
+
+.contenedor {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.lista-box {
+    width: 45%;
 }
 </style>
 
@@ -66,12 +88,23 @@ li {
 <input type="number" id="monto" placeholder="Monto">
 
 <button onclick="agregar()">Agregar</button>
+<button class="reset" onclick="reiniciar()">Reiniciar</button>
 
 <h3>Ingresos: S/ <span id="ingresos">0</span></h3>
 <h3>Gastos: S/ <span id="gastos">0</span></h3>
 <h2>Balance: S/ <span id="balance">0</span></h2>
 
-<ul id="lista"></ul>
+<div class="contenedor">
+    <div class="lista-box">
+        <h3>🟢 Ingresos</h3>
+        <ul id="listaIngresos"></ul>
+    </div>
+
+    <div class="lista-box">
+        <h3>🔴 Gastos</h3>
+        <ul id="listaGastos"></ul>
+    </div>
+</div>
 
 <script>
 let movimientos = JSON.parse(localStorage.getItem("movimientos")) || [];
@@ -86,10 +119,13 @@ function agregar() {
         return;
     }
 
+    let fecha = new Date().toLocaleString();
+
     let movimiento = {
-        tipo: tipo,
-        descripcion: descripcion,
-        monto: monto
+        tipo,
+        descripcion,
+        monto,
+        fecha
     };
 
     movimientos.push(movimiento);
@@ -100,8 +136,11 @@ function agregar() {
 }
 
 function mostrar() {
-    let lista = document.getElementById("lista");
-    lista.innerHTML = "";
+    let listaIngresos = document.getElementById("listaIngresos");
+    let listaGastos = document.getElementById("listaGastos");
+
+    listaIngresos.innerHTML = "";
+    listaGastos.innerHTML = "";
 
     let ingresos = 0;
     let gastos = 0;
@@ -110,15 +149,20 @@ function mostrar() {
         let li = document.createElement("li");
 
         li.innerHTML = `
-            ${m.tipo.toUpperCase()} - ${m.descripcion} - S/ ${m.monto}
+            <strong>${m.descripcion}</strong><br>
+            S/ ${m.monto} <br>
+            <small>${m.fecha}</small>
+            <br>
             <button class="eliminar" onclick="eliminar(${index})">X</button>
         `;
 
-        lista.appendChild(li);
-
         if (m.tipo === "ingreso") {
+            li.classList.add("ingreso");
+            listaIngresos.appendChild(li);
             ingresos += m.monto;
         } else {
+            li.classList.add("gasto");
+            listaGastos.appendChild(li);
             gastos += m.monto;
         }
     });
@@ -132,6 +176,14 @@ function eliminar(index) {
     movimientos.splice(index, 1);
     localStorage.setItem("movimientos", JSON.stringify(movimientos));
     mostrar();
+}
+
+function reiniciar() {
+    if (confirm("¿Seguro que quieres borrar todos los datos?")) {
+        movimientos = [];
+        localStorage.removeItem("movimientos");
+        mostrar();
+    }
 }
 
 function limpiar() {
