@@ -59,7 +59,6 @@ li {
     border-radius: 8px;
 }
 
-/* 🔥 CONTENEDOR DEL GRÁFICO */
 .grafico-container {
     width: 100%;
     max-width: 400px;
@@ -70,7 +69,6 @@ li {
     border-radius: 12px;
 }
 
-/* 📱 RESPONSIVE */
 @media(max-width:768px){
     .contenedor{ 
         flex-direction: column; 
@@ -139,18 +137,27 @@ let filtro = "todos";
 let chart;
 
 function agregar(){
-    let tipo = tipo.value;
-    let descripcion = descripcion.value;
-    let monto = parseFloat(monto.value);
+    let tipoEl = document.getElementById("tipo");
+    let descEl = document.getElementById("descripcion");
+    let montoEl = document.getElementById("monto");
 
-    if(!descripcion || isNaN(monto)) return alert("Completa datos");
+    let tipo = tipoEl.value;
+    let descripcion = descEl.value;
+    let monto = parseFloat(montoEl.value);
+
+    if(!descripcion || isNaN(monto)) {
+        alert("Completa datos");
+        return;
+    }
 
     let fecha = new Date().toISOString();
 
-    movimientos.push({tipo,descripcion,monto,fecha});
+    movimientos.push({tipo, descripcion, monto, fecha});
     localStorage.setItem("movimientos", JSON.stringify(movimientos));
 
-    limpiar();
+    descEl.value = "";
+    montoEl.value = "";
+
     mostrar();
 }
 
@@ -256,12 +263,9 @@ function setFiltro(f){
     mostrar();
 }
 
-function limpiar(){
-    descripcion.value="";
-    monto.value="";
-}
-
-let ingresosEl=ingresos, gastosEl=gastos, balanceEl=balance;
+let ingresosEl=document.getElementById("ingresos");
+let gastosEl=document.getElementById("gastos");
+let balanceEl=document.getElementById("balance");
 
 mostrar();
 </script>
